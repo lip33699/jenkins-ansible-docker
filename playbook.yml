@@ -1,7 +1,10 @@
-
+---
 - name: install wartest
   hosts: all
   become: yes
+  vars:
+    ansible_user: "{{ ansible_user }}"  # Utilise la variable passée par Jenkins
+    ansible_ssh_pass: "{{ ansible_password }}"  # Utilise le mot de passe passé par Jenkins
   roles:
     - wartest
 

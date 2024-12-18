@@ -1,5 +1,8 @@
-all:
-  hosts:
-    192.168.79.136:
-      ansible_user: rommel
-      ansible_ssh_pass: rommel
+---
+- name: install wartest
+  hosts: all
+  become: yes
+  vars:
+    image: "{{ image }}"  # Cette variable sera transmise via Jenkins
+  roles:
+    - wartest

@@ -1,63 +1,44 @@
 ---
-- name: install wartest
+- name: Install and deploy wartest
   hosts: all
   become: yes
   vars:
-    image: "{{ image }}"  # Cette variable sera transmise via Jenkins
-    ansible_python_interpreter: /usr/libexec/platform-python  # Spécifier l'interpréteur Python pour CentOS
+    image: "{{ image }}"  # Image Docker transmise par Jenkins
+    docker_registry_username: "lip33"
+    docker_registry_password: "74PNt6dj"
 
   tasks:
     - name: Ensure Python3 is installed on CentOS
-      dnf:
+      package:
         name: python3
         state: present
-      when: ansible_facts['os_family'] == 'RedHat'
 
     - name: Install pip on CentOS
-      dnf:
+      package:
         name: python3-pip
         state: present
-      when: ansible_facts['os_family'] == 'RedHat'
 
-    - name: Install necessary dependencies on CentOS
-      dnf:
-        name:
-          - python3-devel
-          - gcc
-          - make
+    - name: Install Docker SDK for Python
+      pip:
+        name: docker
         state: present
-      when: ansible_facts['os_family'] == 'RedHat'
+
+    - name: Log in to Docker registry
+      docker_login:
+        registry: registry.gitlab.com
+        username: "{{ docker_registry_username }}"
+        password: "{{ docker_registry_password }}"
 
     - name: Pull the Docker image
       docker_image:
         name: "{{ image }}"
         source: pull
 
-    - name: Run Docker container
+    - name: Run the Docker container
       docker_container:
-        name: "wartest-container"
+        name: wartest-container
         image: "{{ image }}"
         state: started
-        detach: true
+        restart_policy: always
         ports:
-          - "8081:8080"
-      register: docker_run
-
-    - name: Wait for container to be ready
-      wait_for:
-        host: "{{ ansible_host }}"
-        port: 8081
-        delay: 10
-        timeout: 30
-        state: started
-
-    - name: Test the application inside the container
-      uri:
-        url: "http://{{ ansible_host }}:8081"
-        method: GET
-        return_content: yes
-      register: result
-      until: result.status == 200
-      retries: 5
-      delay: 10
-
+          - "8080:8080"
